@@ -124,20 +124,12 @@ func (r *AutenticacionController) RegistroGET(c *gin.Context) {
 }
 
 func (r *AutenticacionController) RegistroPOST(c *gin.Context) {
-	type UsuarioForm struct {
-		Nombre   string `form:"nombre"`
-		Email    string `form:"email"`
-		Password string `form:"password"`
-	}
-	var usuarioForm UsuarioForm
 	var usuario models.Usuarios
-	if err := c.ShouldBind(&usuarioForm); err != nil {
+	if err := c.ShouldBind(&usuario); err != nil {
 		c.Redirect(http.StatusSeeOther, "/registro?error=datos_incorrectos")
 		return
 	}
-	log.Printf("Usuario form: %s", usuarioForm)
-	usuario.Nombre = usuarioForm.Nombre
-	usuario.Email = usuarioForm.Email
+	log.Printf("Usuario form: %v", usuario)
 	usuario.GoogleID = nil
 	// Validar nombre (que coincida con tu formulario HTML)
 	if strings.TrimSpace(usuario.Nombre) == "" {
@@ -145,8 +137,7 @@ func (r *AutenticacionController) RegistroPOST(c *gin.Context) {
 		return
 	}
 	//Hashear
-	if usuarioForm.Password != "" {
-		hash, err := r.utils.Hash_password(usuarioForm.Password)
+		hash, err := r.utils.Hash_password(*usuario.Password)
 		if err != nil {
 			c.Redirect(http.StatusSeeOther, "/registro?error=error_hasheo")
 			return
@@ -155,17 +146,13 @@ func (r *AutenticacionController) RegistroPOST(c *gin.Context) {
 		usuario.PreviousPasswords = previousPassword
 		usuario.Password = &hash // asignamos puntero al hash
 
-	} else {
-		usuario.Password = nil
-	}
-
 	// Establecer foto por defecto si no viene de Google
 	if usuario.FotoPerfil == "" {
 		usuario.FotoPerfil = "/assets/perfil-user.jpg"
 	}
 
 	// Crear usuario
-	_, err := r.service.AddUser(&usuario)
+	_, err = r.service.AddUser(&usuario)
 	if err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			c.Redirect(http.StatusSeeOther, "/registro?error=email_ya_registrado")
