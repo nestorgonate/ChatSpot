@@ -2,12 +2,11 @@ package models
 
 import "gorm.io/gorm"
 
-type Message struct {
+//Aun no se usa
+type UsuariosSala struct {
 	gorm.Model
-	UsuarioID uint `json:"usuarioID"`
-	SalaID uint `json:"salaID"`
-	Mensaje string `gorm:"type:longtext;not null" json:"mensaje"`
+	UsuarioID uint
+	SalaID uint
 	Usuarios Usuarios `gorm:"foreignKey:UsuarioID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Salas Salas `gorm:"foreignKey:SalaID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	UsuarioNombre string `gorm:"-" json:"usuarioMessage"`
 }

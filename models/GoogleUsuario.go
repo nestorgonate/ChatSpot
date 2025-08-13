@@ -1,5 +1,7 @@
 package models
 
+
+//Aun no se usa
 type GoogleUser struct {
 	GoogleID   string `json:"id"`
 	Email      string `json:"email"`

@@ -18,6 +18,11 @@ type IGormRepositories interface {
 	SaveUserGoogle(content []byte) (*models.Usuarios, error)
 	UpdatePassword(newPassword string, id uint) error
 	IsPreviousPassword(id uint, newPassword string) bool
+	AddSalaToDatabase(sala *models.Salas) error
+	GetAllSalas() ([]models.Salas, error)
+	GetSalaByID(id uint) (*models.Salas, error)
+	GetLastMessages(salaID uint) ([]models.Message, error)
+	AddMessageToDatabase(mensaje *models.Message)
 }
 
 type GormRepositories struct {
@@ -30,8 +35,8 @@ func NewGormRepositories(db *gorm.DB) *GormRepositories {
 
 func (r *GormRepositories) GetAll() ([]models.Usuarios, error) {
 	var users []models.Usuarios
-	result := r.db.Find(&users)
-	return users, result.Error
+	err := r.db.Find(&users)
+	return users, err.Error
 }
 
 func (r *GormRepositories) GetByID(id uint) (*models.Usuarios, error) {
@@ -120,4 +125,35 @@ func (r *GormRepositories) IsPreviousPassword(id uint, newPassword string) bool 
 		}
 	}
 	return false
+}
+
+func (r *GormRepositories) AddSalaToDatabase(sala *models.Salas) error{
+	err := r.db.Create(sala)
+	return err.Error
+}
+
+func (r *GormRepositories) GetAllSalas() ([]models.Salas, error){
+	var salas []models.Salas
+	err := r.db.Find(&salas)
+	return salas, err.Error
+}
+
+func (r *GormRepositories) GetSalaByID(id uint) (*models.Salas, error){
+	var sala models.Salas
+	err := r.db.Model(models.Salas{}).Where("id = ?", id).First(&sala)
+	return &sala, err.Error
+}
+
+func (r *GormRepositories) GetLastMessages(salaID uint) ([]models.Message, error){
+	var mensajes []models.Message
+	err := r.db.Preload("Usuarios").Model(models.Message{}).Where("sala_id = ?", salaID).Order("created_at desc").Limit(50).Find(&mensajes)
+	//Inventir slice para mostrar el mensaje nuevo al final del scroll del chat
+	for i, j := 0, len(mensajes)-1; i < j; i, j = i+1, j-1 {
+        mensajes[i], mensajes[j] = mensajes[j], mensajes[i]
+    }
+	return mensajes, err.Error
+}
+
+func (r *GormRepositories) AddMessageToDatabase(mensaje *models.Message){
+	r.db.Create(&mensaje)
 }

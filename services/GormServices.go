@@ -10,6 +10,11 @@ type IGormRepository interface {
 	SaveUserGoogle(content []byte) (*models.Usuarios, error)
 	UpdatePassword(newPassword string, id uint) error
 	IsPreviousPassword(id uint, newPassword string) bool
+	AddSalaToDatabase(sala *models.Salas) error
+	GetAllSalas() ([]models.Salas, error)
+	GetSalaByID(id uint) (*models.Salas, error)
+	GetLastMessages(salaID uint) ([]models.Message, error)
+	AddMessageToDatabase(mensaje *models.Message)
 }
 
 type GormServices struct {
@@ -37,13 +42,33 @@ func (r *GormServices) AddUser(usuario *models.Usuarios) (*models.Usuarios, erro
 }
 
 func (r *GormServices) SaveUserGoogle(content []byte) (*models.Usuarios, error) {
-	return r.repository.SaveUserGoogle(content)
+	return r.repository.SaveUserGoogle(content) //Delega la funcion al repository
 }
 
 func (r *GormServices) UpdatePassword(newPassword string, id uint) error {
-	return r.repository.UpdatePassword(newPassword, id)
+	return r.repository.UpdatePassword(newPassword, id) //Delega la funcion al repository
 }
 
 func (r *GormServices) IsPreviousPassword(id uint, newPassword string) bool {
-	return r.repository.IsPreviousPassword(id, newPassword)
+	return r.repository.IsPreviousPassword(id, newPassword) //Delega la funcion al repository
+}
+
+func (r *GormServices) AddSalaToDatabase(sala *models.Salas) error{
+	return r.repository.AddSalaToDatabase(sala) //Delega la funcion al repository
+}
+
+func (r *GormServices) GetAllSalas() ([]models.Salas, error){
+	return r.repository.GetAllSalas() //Delega la funcion al repository
+}
+
+func (r *GormServices) GetSalaByID(id uint) (*models.Salas, error){
+	return r.repository.GetSalaByID(id)
+}
+
+func (r *GormServices) GetLastMessages(salaID uint) ([]models.Message, error){
+	return r.repository.GetLastMessages(salaID)
+}
+
+func (r *GormServices) AddMessageToDatabase(mensaje *models.Message){
+	r.repository.AddMessageToDatabase(mensaje)
 }

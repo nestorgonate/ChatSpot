@@ -18,21 +18,29 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error de db: %v", err)
 	}
-	err = dbConn.AutoMigrate(&models.Usuarios{})
+	err = dbConn.AutoMigrate(&models.Usuarios{}, &models.Salas{}, &models.UsuariosSala{}, &models.Message{})
 	if err != nil{
 		log.Printf("Error de db: %v", err)
 	}
 	//Repositorios
+	utils := utils.NewUtils()
 	gormRepositories := repositories.NewGormRepositories(dbConn)
-	chatRepositories := repositories.NewChatRepositories()
+	chatRepositories := repositories.NewChatRepositories(utils, gormRepositories)
 	//Servicios
 	gormServices := services.NewGormServices(gormRepositories)
 	chatServices := services.NewChatServices(chatRepositories)
 	//Utils
-	utils := utils.NewUtils()
+	//RabbitMQ
+	rabbitMQ, err := utils.ConectarRabbitMQ()
+	if err != nil{
+		fmt.Printf("no se conecto a RabbitMQ: %v", err)
+	}
+	defer rabbitMQ.CloseRabbitMQ()
+	
 	//Controladores
 	chatController := controllers.NewChatController(chatServices, utils, chatRepositories, gormServices)
 	autenticacionController := controllers.NewAutenticacionController(gormServices)
+	salasController := controllers.NewSalasController(gormServices)
 	//Middlewares
 	middlewares := middlewares.NewMiddleware(gormServices)
 	r := gin.Default()
@@ -45,8 +53,10 @@ func main() {
 	autenticado.Use(middlewares.ValidarUsuario())
 	{
 		autenticado.GET("/websockets", chatController.ChatController)
-		autenticado.GET("/chat", chatController.ChatView)
+		autenticado.GET("/chat/:id", chatController.ChatView)
 		autenticado.GET("/logout", autenticacionController.Logout)
+		autenticado.GET("/salas", salasController.ListarSalas)
+		autenticado.POST("/salas", salasController.NuevaSala)
 	}
 	r.Run()
 }

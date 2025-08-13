@@ -22,7 +22,10 @@ func NewChatController(services *services.ChatServices, utils *utils.Utils, chat
 	return &ChatController{ChatServices: services, Utils: utils, ChatRepositories: chatrepository, GormServices: gormServices}
 }
 
+// Controla la conexion a websockets
 func (r *ChatController) ChatController(c *gin.Context) {
+	salaID := c.Query("salaID")
+	log.Printf("salaID: %v", salaID)
 	allowedOrigin := r.Utils.AllowedOrigins
 	//Valida si se debe cambiar el protocolo http a websocket
 	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
@@ -41,15 +44,23 @@ func (r *ChatController) ChatController(c *gin.Context) {
 		log.Printf("No sirve websockets: %v", err)
 		return
 	}
-	go r.ChatRepositories.HandleConnections(conn)
+	//Obtener usuario
+	go r.ChatRepositories.HandleConnections(conn, salaID)
 }
 
+// Controla la vista del chat
 func (r *ChatController) ChatView(c *gin.Context) {
 	usuarioID := r.Utils.UsuarioIDJWT(c, "usuarioJWT", "usuarioID")
-	log.Printf("Usuario ID de JWT: %v", usuarioID)
-	usuario, _ := r.GormServices.GetUserByID(uint(usuarioID))
-	log.Print(usuario.Usuario)
+	usuario, _ := r.GormServices.GetUserByID(usuarioID)
+	salaIDString := c.Param("id")
+	salaID := r.Utils.StringToUint(salaIDString)
+	sala, _ := r.GormServices.GetSalaByID(salaID)
+	mensajes, _ := r.GormServices.GetLastMessages(salaID)
+	log.Printf("Mensajes: %v", mensajes)
 	c.HTML(http.StatusOK, "chat.html", gin.H{
+		"UsuarioID": usuarioID,
 		"Usuario": usuario,
+		"Sala":      sala,
+		"Mensajes":  mensajes,
 	})
 }
