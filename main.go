@@ -45,6 +45,9 @@ func main() {
 	middlewares := middlewares.NewMiddleware(gormServices)
 	r := gin.Default()
 	r.LoadHTMLGlob("views/*.html")
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(200, "index.html", nil)
+	})
 	r.GET("/registro", autenticacionController.RegistroGET)
 	r.POST("/registro", autenticacionController.RegistroPOST)
 	r.GET("/login", autenticacionController.LoginGET)

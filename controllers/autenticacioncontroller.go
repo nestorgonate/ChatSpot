@@ -114,7 +114,7 @@ func (r *AutenticacionController) LoginPOST(c *gin.Context) {
 		if usuario.Is_2fa {
 			c.Redirect(http.StatusSeeOther, "/verificarFA")
 		} else {
-			c.Redirect(http.StatusSeeOther, "/autenticado/chat")
+			c.Redirect(http.StatusSeeOther, "/autenticado/salas")
 		}
 	}
 }
@@ -181,7 +181,7 @@ func (r *AutenticacionController) RegistroPOST(c *gin.Context) {
 	}
 
 	c.SetCookie("usuarioJWT", tokenID, 86400, "/", "", false, true)
-	c.Redirect(http.StatusSeeOther, "/autenticado/chat")
+	c.Redirect(http.StatusSeeOther, "/autenticado/salas")
 }
 
 func (r *AutenticacionController) Logout(c *gin.Context){

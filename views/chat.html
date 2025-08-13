@@ -31,7 +31,10 @@
 
 <body>
     <div class="container mt-5">
-        <h2>Chat - {{.Sala.Nombre}}</h2>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Chat - {{.Sala.Nombre}}</h2>
+            <a href="/autenticado/salas" class="btn btn-secondary">Regresar al menú de salas</a>
+        </div>
 
         <!-- Chat box -->
         <div id="chat-box">
