@@ -1,0 +1,123 @@
+package repositories
+
+import (
+	"ChatSpot/models"
+	"encoding/json"
+	"errors"
+	"log"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
+)
+
+type IGormRepositories interface {
+	GetAll() ([]models.Usuarios, error)
+	GetByID(id uint) (*models.Usuarios, error)
+	GetByEmail(email string) (*models.Usuarios, error)
+	AddUser(*models.Usuarios) (*models.Usuarios, error)
+	SaveUserGoogle(content []byte) (*models.Usuarios, error)
+	UpdatePassword(newPassword string, id uint) error
+	IsPreviousPassword(id uint, newPassword string) bool
+}
+
+type GormRepositories struct {
+	db *gorm.DB
+}
+
+func NewGormRepositories(db *gorm.DB) *GormRepositories {
+	return &GormRepositories{db: db}
+}
+
+func (r *GormRepositories) GetAll() ([]models.Usuarios, error) {
+	var users []models.Usuarios
+	result := r.db.Find(&users)
+	return users, result.Error
+}
+
+func (r *GormRepositories) GetByID(id uint) (*models.Usuarios, error) {
+	var usuario models.Usuarios
+	result := r.db.Where("id = ?", id).First(&usuario)
+	return &usuario, result.Error
+}
+
+func (r *GormRepositories) GetByEmail(email string) (*models.Usuarios, error) {
+	var usuario models.Usuarios
+	result := r.db.Where("email = ?", email).First(&usuario)
+	log.Print("Resultado getbyemail: ", result)
+	return &usuario, result.Error
+}
+
+func (r *GormRepositories) AddUser(usuario *models.Usuarios) (*models.Usuarios, error) {
+	result := r.db.Create(usuario)
+	return usuario, result.Error
+}
+
+func (r *GormRepositories) SaveUserGoogle(content []byte) (*models.Usuarios, error) {
+	var googleUser models.GoogleUser
+	err := json.Unmarshal(content, &googleUser)
+	if err != nil {
+		return nil, err
+	}
+	var usuario *models.Usuarios
+	usuario, err = r.GetByEmail(googleUser.Email)
+	//Si hay error en la solicitud a db es porque el usuario no existe
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		usuario = &models.Usuarios{
+			Nombre:     googleUser.Nombre,
+			Email:      googleUser.Email,
+			Password:   nil,
+			FotoPerfil: googleUser.FotoPerfil,
+			GoogleID:   &googleUser.GoogleID,
+		}
+		log.Print("Registrando usuario en db")
+		r.AddUser(usuario)
+	}
+	log.Print("Login usuario en db")
+	return usuario, nil
+}
+
+func (r *GormRepositories) UpdatePassword(newPassword string, id uint) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	hashedStr := string(hashedPassword)
+	//Leer usuario en la db para saber las contraseñas
+	var usuario models.Usuarios
+	r.db.Model(models.Usuarios{}).Where("id = ?", id).First(&usuario)
+
+	//Unmarshal de las contraseñas anteriores
+	var previousPassword []string
+	json.Unmarshal(usuario.PreviousPasswords, &previousPassword)
+	log.Print("Unmarshal de passwords: ", previousPassword)
+	if usuario.Password != nil {
+		previousPassword = append(previousPassword, *usuario.Password)
+	}
+
+	//Marshal de las contraseñas para agregar la nueva contraseña
+	previousPasswordMarshall, _ := json.Marshal(previousPassword)
+	return r.db.Model(models.Usuarios{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"password":           hashedStr,
+		"previous_passwords": datatypes.JSON(previousPasswordMarshall),
+	}).Error
+}
+
+func (r *GormRepositories) IsPreviousPassword(id uint, newPassword string) bool {
+	var usuario models.Usuarios
+	r.db.Model(models.Usuarios{}).Where("id = ?", id).First(&usuario)
+	//Unmarshal de las contraseñas anteriores
+	var previousPasswords []string
+	json.Unmarshal(usuario.PreviousPasswords, &previousPasswords)
+	if err := json.Unmarshal(usuario.PreviousPasswords, &previousPasswords); err != nil {
+		return false
+	}
+	//Comprar las contraseñas
+	for _, hash := range previousPasswords {
+		if bcrypt.CompareHashAndPassword([]byte(hash), []byte(newPassword)) == nil {
+			//Coincide la contraseña
+			return true
+		}
+	}
+	return false
+}

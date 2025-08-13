@@ -14,11 +14,12 @@ import (
 type ChatController struct {
 	Utils            *utils.Utils
 	ChatRepositories *repositories.ChatRepositories
-	Services         *services.ChatServices
+	ChatServices     *services.ChatServices
+	GormServices     *services.GormServices
 }
 
-func NewChatController(services *services.ChatServices, utils *utils.Utils, chatrepository *repositories.ChatRepositories) *ChatController {
-	return &ChatController{Services: services, Utils: utils, ChatRepositories: chatrepository}
+func NewChatController(services *services.ChatServices, utils *utils.Utils, chatrepository *repositories.ChatRepositories, gormServices *services.GormServices) *ChatController {
+	return &ChatController{ChatServices: services, Utils: utils, ChatRepositories: chatrepository, GormServices: gormServices}
 }
 
 func (r *ChatController) ChatController(c *gin.Context) {
@@ -44,5 +45,11 @@ func (r *ChatController) ChatController(c *gin.Context) {
 }
 
 func (r *ChatController) ChatView(c *gin.Context) {
-	c.HTML(200, "chat.html", nil)
+	usuarioID := r.Utils.UsuarioIDJWT(c, "usuarioJWT", "usuarioID")
+	log.Printf("Usuario ID de JWT: %v", usuarioID)
+	usuario, _ := r.GormServices.GetUserByID(uint(usuarioID))
+	log.Print(usuario.Usuario)
+	c.HTML(http.StatusOK, "chat.html", gin.H{
+		"Usuario": usuario,
+	})
 }

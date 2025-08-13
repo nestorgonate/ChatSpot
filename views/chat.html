@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -12,9 +11,15 @@
     <div style="display: flex;flex-direction: column;">
         <div id="inputs">
             <form onsubmit="handleSubmit(event)" method="post">
-                <input id="username" type="text" name="username" placeholder="username" required>
-                <input id="message" type="text" name="message" placeholder="what's on your mind ?" required>
-                <input type="submit" value="Send">
+                <!-- Muestra el usuario -->
+                <h3>Conectado como: <span id="usuario-mostrar">{{.Usuario.Usuario}}</span></h3>
+
+                <!-- Campo oculto con el usuario -->
+                <input type="hidden" id="usuario" name="usuario" value="{{.Usuario.Usuario}}">
+
+                <!-- Campo para mensaje -->
+                <input id="mensaje" type="text" name="mensaje" placeholder="Escribe tu mensaje..." required>
+                <input type="submit" value="Enviar">
             </form>
         </div>
         <div id="messages" style="display: flex;flex-direction: column;"></div>
@@ -22,20 +27,26 @@
 </body>
 
 <script>
-
-    const websocket = new WebSocket("ws://localhost:8080/websockets");
+    const websocket = new WebSocket("ws://localhost:8080/autenticado/websockets");
 
     function handleSubmit(e) {
         e.preventDefault();
+
+        // Tomar el valor directamente por ID
+        const usuario = document.getElementById("usuario").value;
+        const mensaje = document.getElementById("mensaje").value;
+
         websocket.send(JSON.stringify({
-            usuario: e.target.username.value,
-            mensaje: e.target.message.value
-        }))
+            usuario: usuario,
+            mensaje: mensaje
+        }));
+
+        document.getElementById("mensaje").value = ""; // limpiar campo
     }
 
     websocket.onmessage = function (event) {
-        const message = JSON.parse(event.data)
-        messages.innerHTML += `<p><b>${message.usuario}</b>: ${message.mensaje}</p>`
+        const message = JSON.parse(event.data);
+        messages.innerHTML += `<p><b>${message.usuario}</b>: ${message.mensaje}</p>`;
     }
 </script>
 
