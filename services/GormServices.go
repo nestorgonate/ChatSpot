@@ -12,9 +12,10 @@ type IGormRepository interface {
 	IsPreviousPassword(id uint, newPassword string) bool
 	AddSalaToDatabase(sala *models.Salas) error
 	GetAllSalas() ([]models.Salas, error)
-	GetSalaByID(id uint) (*models.Salas, error)
+	GetSalaByID(salaID uint) (*models.Salas, error)
 	GetLastMessages(salaID uint) ([]models.Message, error)
 	AddMessageToDatabase(mensaje *models.Message)
+	DeleteSalaByID(salaID uint, usuarioID uint) bool
 }
 
 type GormServices struct {
@@ -61,8 +62,8 @@ func (r *GormServices) GetAllSalas() ([]models.Salas, error){
 	return r.repository.GetAllSalas() //Delega la funcion al repository
 }
 
-func (r *GormServices) GetSalaByID(id uint) (*models.Salas, error){
-	return r.repository.GetSalaByID(id)
+func (r *GormServices) GetSalaByID(salaID uint) (*models.Salas, error){
+	return r.repository.GetSalaByID(salaID)
 }
 
 func (r *GormServices) GetLastMessages(salaID uint) ([]models.Message, error){
@@ -71,4 +72,8 @@ func (r *GormServices) GetLastMessages(salaID uint) ([]models.Message, error){
 
 func (r *GormServices) AddMessageToDatabase(mensaje *models.Message){
 	r.repository.AddMessageToDatabase(mensaje)
+}
+
+func (r *GormServices) DeleteSalaByID(salaID uint, usuarioID uint) bool{
+	return r.repository.DeleteSalaByID(salaID, usuarioID)
 }

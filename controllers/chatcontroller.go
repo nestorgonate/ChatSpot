@@ -50,16 +50,15 @@ func (r *ChatController) ChatController(c *gin.Context) {
 
 // Controla la vista del chat
 func (r *ChatController) ChatView(c *gin.Context) {
-	usuarioID := r.Utils.UsuarioIDJWT(c, "usuarioJWT", "usuarioID")
+	usuarioID := r.Utils.GetUsuarioIdFromJWT(c, "usuarioJWT", "usuarioID")
 	usuario, _ := r.GormServices.GetUserByID(usuarioID)
-	salaIDString := c.Param("id")
+	salaIDString := c.Query("id")
 	salaID := r.Utils.StringToUint(salaIDString)
 	sala, _ := r.GormServices.GetSalaByID(salaID)
 	mensajes, _ := r.GormServices.GetLastMessages(salaID)
-	log.Printf("Mensajes: %v", mensajes)
 	c.HTML(http.StatusOK, "chat.html", gin.H{
 		"UsuarioID": usuarioID,
-		"Usuario": usuario,
+		"Usuario":   usuario,
 		"Sala":      sala,
 		"Mensajes":  mensajes,
 	})

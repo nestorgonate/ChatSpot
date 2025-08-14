@@ -18,17 +18,15 @@ import (
 
 type Utils struct {
 	AllowedOrigins []string
-	Usuario models.Usuarios
+	Usuario        models.Usuarios
 	Conn           *amqp091.Connection
 	Channel        *amqp091.Channel
 }
 
-
 func NewUtils() *Utils {
 	return &Utils{
 		AllowedOrigins: []string{"http://localhost:8080"},
-
-		}
+	}
 }
 
 // Verifica si la contraseña actual es correcta
@@ -59,8 +57,8 @@ func (r *Utils) ValidatePassword(password, hash string) bool {
 	return err == nil
 }
 
-//Obtiene el usuarioID del JWT
-func (r *Utils) UsuarioIDJWT(c *gin.Context, cookie, valorJWT string) uint {
+// Obtiene el usuarioID del JWT
+func (r *Utils) GetUsuarioIdFromJWT(c *gin.Context, cookie, valorJWT string) uint {
 	obtenerJWT, _ := c.Cookie(cookie)
 	token, _ := jwt.Parse(obtenerJWT, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -104,31 +102,31 @@ func (r *Utils) ConectarRabbitMQ() (*Utils, error) {
 	port := os.Getenv("RABBITMQ_PORT")
 	dsn := fmt.Sprintf("amqp://%s:%s@%s:%s", user, password, host, port)
 	conn, err := amqp091.Dial(dsn)
-	if err != nil{
+	if err != nil {
 		fmt.Printf("No se pudo conectar a RabbitMQ: %v", err)
 	}
 	channel, err := conn.Channel()
-	if err != nil{
+	if err != nil {
 		fmt.Printf("No se pudo cargar el canal de RabbitMQ: %v", err)
 	}
 	r.Channel = channel
 	return &Utils{
-		Conn: conn,
+		Conn:    conn,
 		Channel: channel,
 	}, err
 }
 
-func (r *Utils) CloseRabbitMQ(){
+func (r *Utils) CloseRabbitMQ() {
 	r.Channel.Close()
 	r.Conn.Close()
 }
 
-func (r *Utils) UintToString(number uint) string{
+func (r *Utils) UintToString(number uint) string {
 	uintString := strconv.FormatUint(uint64(number), 10)
 	return uintString
 }
 
-func (r *Utils) StringToUint(number string) uint{
+func (r *Utils) StringToUint(number string) uint {
 	uintUint, _ := strconv.ParseUint(number, 10, 64)
 	return uint(uintUint)
 }

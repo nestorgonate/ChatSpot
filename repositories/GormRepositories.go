@@ -20,9 +20,10 @@ type IGormRepositories interface {
 	IsPreviousPassword(id uint, newPassword string) bool
 	AddSalaToDatabase(sala *models.Salas) error
 	GetAllSalas() ([]models.Salas, error)
-	GetSalaByID(id uint) (*models.Salas, error)
+	GetSalaByID(salaID uint) (*models.Salas, error)
 	GetLastMessages(salaID uint) ([]models.Message, error)
 	AddMessageToDatabase(mensaje *models.Message)
+	DeleteSalaByID(salaID uint, usuarioID uint) bool
 }
 
 type GormRepositories struct {
@@ -128,7 +129,7 @@ func (r *GormRepositories) IsPreviousPassword(id uint, newPassword string) bool 
 }
 
 func (r *GormRepositories) AddSalaToDatabase(sala *models.Salas) error{
-	err := r.db.Create(sala)
+	err := r.db.Model(models.Salas{}).Create(sala)
 	return err.Error
 }
 
@@ -140,6 +141,7 @@ func (r *GormRepositories) GetAllSalas() ([]models.Salas, error){
 
 func (r *GormRepositories) GetSalaByID(id uint) (*models.Salas, error){
 	var sala models.Salas
+
 	err := r.db.Model(models.Salas{}).Where("id = ?", id).First(&sala)
 	return &sala, err.Error
 }
@@ -156,4 +158,15 @@ func (r *GormRepositories) GetLastMessages(salaID uint) ([]models.Message, error
 
 func (r *GormRepositories) AddMessageToDatabase(mensaje *models.Message){
 	r.db.Create(&mensaje)
+}
+
+func (r *GormRepositories) DeleteSalaByID(salaID uint, usuarioID uint) bool{
+	resultado := r.db.Model(models.Salas{}).Where("id = ? and usuario_id = ?", salaID, usuarioID).Unscoped().Delete(models.Salas{})
+	var canDelete bool = true
+	//No se borro porque la sala no existe o el usuario no es el propietario
+	if resultado.RowsAffected == 0 {
+		//Establece que no se puede borrar
+		canDelete = false
+	}
+	return canDelete
 }

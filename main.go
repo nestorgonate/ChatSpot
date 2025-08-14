@@ -56,10 +56,11 @@ func main() {
 	autenticado.Use(middlewares.ValidarUsuario())
 	{
 		autenticado.GET("/websockets", chatController.ChatController)
-		autenticado.GET("/chat/:id", chatController.ChatView)
+		autenticado.GET("/chat", chatController.ChatView)
 		autenticado.GET("/logout", autenticacionController.Logout)
 		autenticado.GET("/salas", salasController.ListarSalas)
 		autenticado.POST("/salas", salasController.NuevaSala)
+		autenticado.POST("/salas/borrar", salasController.BorrarSala)
 	}
 	r.Run()
 }
