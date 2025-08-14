@@ -84,8 +84,14 @@
         // Función para agregar mensaje al chat
         function agregarMensaje(usuario, texto) {
             const div = document.createElement("div");
+            const spanUser = document.createElement("span")
+            const spanText = document.createElement("span")
+            spanUser.textContent = usuario;
+            spanUser.style.fontWeight = "bold";
+            spanText.textContent = `: ${texto}`
             div.classList.add("mensaje");
-            div.innerHTML = `<span class="mensaje-usuario">${usuario}:</span> <span class="mensaje-texto">${texto}</span>`;
+            div.appendChild(spanUser);
+            div.appendChild(spanText);
             chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight; // Scroll al final
         }
