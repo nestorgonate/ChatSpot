@@ -61,7 +61,6 @@ func (r *SalasController) BorrarSala(c *gin.Context) {
 	salaID := r.Utils.StringToUint(salaIDString)
 	usuarioID := r.Utils.GetUsuarioIdFromJWT(c, "usuarioJWT", "usuarioID")
 	canDeleteSala := r.GormServices.DeleteSalaByID(salaID, usuarioID)
-	log.Printf("Bool de canDeleteSala: %v", canDeleteSala)
 	//canDeleteSala es false, no se puede borrar la sala porque el propietario no es el que borro la sala
 	if !canDeleteSala{
 		c.Redirect(http.StatusSeeOther, "/autenticado/salas?error=no_eres_el_propietario_de_la_sala")
