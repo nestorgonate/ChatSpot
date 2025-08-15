@@ -2,7 +2,7 @@ package repositories
 
 import (
 	"ChatSpot/models"
-	"ChatSpot/utils"
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -32,7 +32,7 @@ type IGormRepositories interface {
 
 type GormRepositories struct {
 	db *gorm.DB
-	Utils *utils.Utils
+	redisClient *redis.Client
 }
 
 func NewGormRepositories(db *gorm.DB) *GormRepositories {
@@ -152,16 +152,16 @@ func (r *GormRepositories) GetSalaByID(id uint) (*models.Salas, error){
 
 func (r *GormRepositories) GetLastMessages(salaID uint) []models.Message{
 	var mensajes []models.Message
-	redisClient := r.Utils.RedisClient()
+	redisClient := r.redisClient
 	key := "latest_messages"
-	cache, err := redisClient.Get(r.Utils.Ctx, key).Result()
+	cache, err := redisClient.Get(context.Background(), key).Result()
 	//Redis nil no tiene los ultimos mensajes
 	if err == redis.Nil{
 		log.Print("Consultado en la base de datos para usar en redis")
 		r.db.Preload("Usuarios").Model(models.Message{}).Where("sala_id = ?", salaID).Order("created_at desc").Limit(50).Find(&mensajes)
 		//Parsear el contenido de la variable mensajes a un JSON para enviarlo a redis
 		mensajesJSON, _ := json.Marshal(&mensajes)
-		redisClient.Set(r.Utils.Ctx, key, mensajesJSON, 5*time.Minute)
+		redisClient.Set(context.Background(), key, mensajesJSON, 5*time.Minute)
 	} else if err != nil{
 		//No funciona redis, consultar a db
 		log.Print("No funciona redis, consultando a db")

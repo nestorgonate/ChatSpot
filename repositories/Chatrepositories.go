@@ -3,12 +3,14 @@ package repositories
 import (
 	"ChatSpot/models"
 	"ChatSpot/utils"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/gorilla/websocket"
 	"github.com/rabbitmq/amqp091-go"
+	"github.com/redis/go-redis/v9"
 )
 
 type IChatRepositories interface{
@@ -20,6 +22,7 @@ type ChatRepositories struct {
 	Utils *utils.Utils
 	SalaConsumers map[string]bool //Mapa de salas que ya tienen un consumidor en RabbitMQ, evita duplicar consumidores para la misma sala map[1:true]
 	db *GormRepositories
+	redisClient *redis.Client
 }
 
 func NewChatRepositories(utils *utils.Utils, db *GormRepositories) *ChatRepositories{
@@ -78,6 +81,7 @@ func (r *ChatRepositories) HandleConnections(conn *websocket.Conn, salaID string
 
 //Declara exchange, queue, binding, consume y reenvia mensajes
 func (r *ChatRepositories) ConsummerRabbitMQ(salaID string) {
+	key := "latest_messages"
 	fmt.Println("ConsummerRabbitMQ")
 	//Declarar el exchange
 	err := r.Utils.Channel.ExchangeDeclare(
@@ -142,6 +146,8 @@ func (r *ChatRepositories) ConsummerRabbitMQ(salaID string) {
 			r.db.db.Model(models.Usuarios{}).Where("id = ?", mensajes.UsuarioID).Find(&usuario)
 			mensajes.UsuarioNombre = usuario.Usuario
 			r.db.db.Create(&mensajes)
+			r.redisClient.Del(context.Background(), key)
+			log.Print("Cache de redis borrada al enviar un mensaje")
 			r.broadcast(mensajes, salaID)
 		}
 	}()
