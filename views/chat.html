@@ -65,7 +65,7 @@
         const chatBox = document.getElementById("chat-box");
         chatBox.scrollTop = chatBox.scrollHeight;
         // Conexión WebSocket
-        const ws = new WebSocket(`ws://localhost:9000/autenticado/websockets?salaID=${salaID}`);
+        const ws = new WebSocket(`ws://209.74.71.119:9000/autenticado/websockets?salaID=${salaID}`);
 
         ws.onopen = () => {
             console.log("Conectado al WebSocket");
