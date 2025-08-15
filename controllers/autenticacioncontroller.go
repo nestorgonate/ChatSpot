@@ -23,7 +23,7 @@ func NewAutenticacionController(service *services.GormServices) *AutenticacionCo
 	return &AutenticacionController{service: service}
 }
 
-func (r *AutenticacionController) LoginGET(c *gin.Context){
+func (r *AutenticacionController) LoginGET(c *gin.Context) {
 	c.HTML(http.StatusOK, "login.html", nil)
 }
 
@@ -32,11 +32,11 @@ func (r *AutenticacionController) LoginPOST(c *gin.Context) {
 	isJsonRequest := strings.Contains(c.GetHeader("Accept"), "application/json") ||
 		c.GetHeader("X-Requested-With") == "XMLHttpRequest"
 
-	email := c.PostForm("email")
+	usuarioUsuario := c.PostForm("usuario")
 	password := c.PostForm("password")
 
 	var usuario *models.Usuarios
-	usuario, err := r.service.GetUserByEmail(email)
+	usuario, err := r.service.GetUserByUsuario(usuarioUsuario)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			if isJsonRequest {
@@ -49,7 +49,7 @@ func (r *AutenticacionController) LoginPOST(c *gin.Context) {
 			} else {
 				c.HTML(http.StatusOK, "login.html", gin.H{
 					"Error": "Email no registrado",
-					"Email": email,
+					"Usuario": usuarioUsuario,
 				})
 			}
 			return
@@ -63,7 +63,7 @@ func (r *AutenticacionController) LoginPOST(c *gin.Context) {
 		} else {
 			c.HTML(http.StatusOK, "login.html", gin.H{
 				"Error": "Error en la base de datos",
-				"Email": email,
+				"Usuario": usuarioUsuario,
 			})
 		}
 		return
@@ -80,14 +80,14 @@ func (r *AutenticacionController) LoginPOST(c *gin.Context) {
 		} else {
 			c.HTML(http.StatusOK, "login.html", gin.H{
 				"Error": "Contraseña incorrecta",
-				"Email": email,
+				"Email": usuarioUsuario,
 			})
 		}
 		return
 	}
 
 	isAuthenticated2fa := false
-	tokenID, err := r.utils.GetJWT(usuario.ID, usuario.Email, usuario.Is_2fa, isAuthenticated2fa)
+	tokenID, err := r.utils.GetJWT(usuario.ID, usuario.Is_2fa, isAuthenticated2fa)
 	if err != nil {
 		if isJsonRequest {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -97,7 +97,7 @@ func (r *AutenticacionController) LoginPOST(c *gin.Context) {
 		} else {
 			c.HTML(http.StatusOK, "login.html", gin.H{
 				"Error": "Error al generar token de sesión",
-				"Email": email,
+				"Email": usuarioUsuario,
 			})
 		}
 		return
@@ -137,14 +137,14 @@ func (r *AutenticacionController) RegistroPOST(c *gin.Context) {
 		return
 	}
 	//Hashear
-		hash, err := r.utils.Hash_password(*usuario.Password)
-		if err != nil {
-			c.Redirect(http.StatusSeeOther, "/registro?error=error_hasheo")
-			return
-		}
-		previousPassword, _ := json.Marshal([]string{hash})
-		usuario.PreviousPasswords = previousPassword
-		usuario.Password = &hash // asignamos puntero al hash
+	hash, err := r.utils.Hash_password(*usuario.Password)
+	if err != nil {
+		c.Redirect(http.StatusSeeOther, "/registro?error=error_hasheo")
+		return
+	}
+	previousPassword, _ := json.Marshal([]string{hash})
+	usuario.PreviousPasswords = previousPassword
+	usuario.Password = &hash // asignamos puntero al hash
 
 	// Establecer foto por defecto si no viene de Google
 	if usuario.FotoPerfil == "" {
@@ -161,7 +161,7 @@ func (r *AutenticacionController) RegistroPOST(c *gin.Context) {
 	}
 	// Generar JWT y redirigir
 	isAuthenticated2fa := false
-	tokenID, err := r.utils.GetJWT(usuario.ID, usuario.Email, usuario.Is_2fa, isAuthenticated2fa)
+	tokenID, err := r.utils.GetJWT(usuario.ID, usuario.Is_2fa, isAuthenticated2fa)
 	if err != nil {
 		c.Redirect(http.StatusSeeOther, "/registro?error=error_jwt")
 		return
@@ -171,7 +171,7 @@ func (r *AutenticacionController) RegistroPOST(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/autenticado/salas")
 }
 
-func (r *AutenticacionController) Logout(c *gin.Context){
+func (r *AutenticacionController) Logout(c *gin.Context) {
 	c.SetCookie("usuarioJWT", "", -1, "/", "", false, true)
 	c.Redirect(http.StatusSeeOther, "/")
 }

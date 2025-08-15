@@ -5,7 +5,7 @@ import "ChatSpot/models"
 type IGormRepository interface {
 	GetAll() ([]models.Usuarios, error)
 	GetByID(id uint) (*models.Usuarios, error)
-	GetByEmail(email string) (*models.Usuarios, error)
+	GetUserByUser(usuarioUsuario string) (*models.Usuarios, error)
 	AddUser(*models.Usuarios) (*models.Usuarios, error)
 	SaveUserGoogle(content []byte) (*models.Usuarios, error)
 	UpdatePassword(newPassword string, id uint) error
@@ -34,8 +34,8 @@ func (r *GormServices) GetUserByID(id uint) (*models.Usuarios, error) {
 	return r.repository.GetByID(id) //Delega la funcion al repository
 }
 
-func (r *GormServices) GetUserByEmail(email string) (*models.Usuarios, error) {
-	return r.repository.GetByEmail(email) //Delega la funcion al repository
+func (r *GormServices) GetUserByUsuario(usuario string) (*models.Usuarios, error) {
+	return r.repository.GetUserByUser(usuario) //Delega la funcion al repository
 }
 
 func (r *GormServices) AddUser(usuario *models.Usuarios) (*models.Usuarios, error) {
@@ -54,26 +54,26 @@ func (r *GormServices) IsPreviousPassword(id uint, newPassword string) bool {
 	return r.repository.IsPreviousPassword(id, newPassword) //Delega la funcion al repository
 }
 
-func (r *GormServices) AddSalaToDatabase(sala *models.Salas) error{
+func (r *GormServices) AddSalaToDatabase(sala *models.Salas) error {
 	return r.repository.AddSalaToDatabase(sala) //Delega la funcion al repository
 }
 
-func (r *GormServices) GetAllSalas() ([]models.Salas, error){
+func (r *GormServices) GetAllSalas() ([]models.Salas, error) {
 	return r.repository.GetAllSalas() //Delega la funcion al repository
 }
 
-func (r *GormServices) GetSalaByID(salaID uint) (*models.Salas, error){
+func (r *GormServices) GetSalaByID(salaID uint) (*models.Salas, error) {
 	return r.repository.GetSalaByID(salaID)
 }
 
-func (r *GormServices) GetLastMessages(salaID uint) ([]models.Message, error){
+func (r *GormServices) GetLastMessages(salaID uint) ([]models.Message, error) {
 	return r.repository.GetLastMessages(salaID)
 }
 
-func (r *GormServices) AddMessageToDatabase(mensaje *models.Message){
+func (r *GormServices) AddMessageToDatabase(mensaje *models.Message) {
 	r.repository.AddMessageToDatabase(mensaje)
 }
 
-func (r *GormServices) DeleteSalaByID(salaID uint, usuarioID uint) bool{
+func (r *GormServices) DeleteSalaByID(salaID uint, usuarioID uint) bool {
 	return r.repository.DeleteSalaByID(salaID, usuarioID)
 }

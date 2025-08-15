@@ -13,7 +13,7 @@ import (
 type IGormRepositories interface {
 	GetAll() ([]models.Usuarios, error)
 	GetByID(id uint) (*models.Usuarios, error)
-	GetByEmail(email string) (*models.Usuarios, error)
+	GetUserByUser(usuarioUsuario string) (*models.Usuarios, error)
 	AddUser(*models.Usuarios) (*models.Usuarios, error)
 	SaveUserGoogle(content []byte) (*models.Usuarios, error)
 	UpdatePassword(newPassword string, id uint) error
@@ -46,9 +46,9 @@ func (r *GormRepositories) GetByID(id uint) (*models.Usuarios, error) {
 	return &usuario, result.Error
 }
 
-func (r *GormRepositories) GetByEmail(email string) (*models.Usuarios, error) {
+func (r *GormRepositories) GetUserByUser(usuarioUsuario string) (*models.Usuarios, error) {
 	var usuario models.Usuarios
-	result := r.db.Where("email = ?", email).First(&usuario)
+	result := r.db.Where("usuario = ?", usuarioUsuario).First(&usuario)
 	log.Print("Resultado getbyemail: ", result)
 	return &usuario, result.Error
 }
@@ -65,12 +65,11 @@ func (r *GormRepositories) SaveUserGoogle(content []byte) (*models.Usuarios, err
 		return nil, err
 	}
 	var usuario *models.Usuarios
-	usuario, err = r.GetByEmail(googleUser.Email)
+	usuario, err = r.GetUserByUser(googleUser.Email)
 	//Si hay error en la solicitud a db es porque el usuario no existe
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		usuario = &models.Usuarios{
 			Nombre:     googleUser.Nombre,
-			Email:      googleUser.Email,
 			Password:   nil,
 			FotoPerfil: googleUser.FotoPerfil,
 			GoogleID:   &googleUser.GoogleID,

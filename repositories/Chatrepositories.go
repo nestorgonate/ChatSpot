@@ -16,9 +16,9 @@ type IChatRepositories interface{
 }
 
 type ChatRepositories struct {
-	Clients map[*websocket.Conn]string //Solo tiene llaves y el struct no tiene valor, map de conexiones websocket por sala
+	Clients map[*websocket.Conn]string //Solo tiene llaves y el struct no tiene valor, la calve es la conexion y el valor es el ID de la sala map[0x2ec4b68:1]
 	Utils *utils.Utils
-	SalaConsumers map[string]bool //Consumidores por sala
+	SalaConsumers map[string]bool //Mapa de salas que ya tienen un consumidor en RabbitMQ, evita duplicar consumidores para la misma sala map[1:true]
 	db *GormRepositories
 }
 
@@ -40,7 +40,7 @@ func (r *ChatRepositories) HandleConnections(conn *websocket.Conn, salaID string
 	}()
 	//Cada conexion sabe su salaID
 	r.Clients[conn] = salaID
-	//Validar si el consumidor no existe
+	//Validar si la sala tiene un consumidor
 	if !r.SalaConsumers[salaID]{
 		r.SalaConsumers[salaID] = true
 		go r.ConsummerRabbitMQ(salaID)
@@ -65,6 +65,7 @@ func (r *ChatRepositories) HandleConnections(conn *websocket.Conn, salaID string
 			false, //Mandatory
 			false, //Inmediate
 			amqp091.Publishing{
+				DeliveryMode: amqp091.Persistent,
 				ContentType: "application/json",
 				Body: r.messageToJSON(mensaje),
 			},
@@ -121,7 +122,7 @@ func (r *ChatRepositories) ConsummerRabbitMQ(salaID string) {
 	getMensajes, err := r.Utils.Channel.Consume(
 		queue.Name, //Debe ser el mismo de QueueDeclare
 		"",
-		true,   // auto-ack
+		false,   // auto-ack
         false,  // exclusive
         false,  // no local
         false,  // no wait
@@ -138,7 +139,7 @@ func (r *ChatRepositories) ConsummerRabbitMQ(salaID string) {
 				log.Printf("No se pudo parsear el JSON al struct mensajes: %v", err)
 				continue
 			}
-			r.db.db.First(&usuario, mensajes.UsuarioID)
+			r.db.db.Model(models.Usuarios{}).Where("id = ?", mensajes.UsuarioID).Find(&usuario)
 			mensajes.UsuarioNombre = usuario.Usuario
 			r.db.db.Create(&mensajes)
 			r.broadcast(mensajes, salaID)

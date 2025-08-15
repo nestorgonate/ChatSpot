@@ -30,12 +30,11 @@ func NewUtils() *Utils {
 }
 
 // Verifica si la contraseña actual es correcta
-func (r *Utils) GetJWT(usuarioID uint, email string, is2fa bool, isAutenticated2fa bool) (string, error) {
+func (r *Utils) GetJWT(usuarioID uint, is2fa bool, isAutenticated2fa bool) (string, error) {
 	//Asigna el ID del usuario a una cookie, si tiene 2fa y si se ha autenticado con 2fa para validarlos en los middlewares
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"usuarioID":          usuarioID,
 		"exp":                time.Now().Add(time.Hour * 24).Unix(),
-		"email":              email,
 		"is2fa":              is2fa,
 		"isAuthenticated2fa": isAutenticated2fa,
 	})

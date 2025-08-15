@@ -11,7 +11,6 @@ type Usuarios struct {
 	gorm.Model
 	Nombre             string         `json:"nombre" form:"nombre"`
 	Usuario            string         `form:"usuario"`
-	Email              string         `gorm:"unique" json:"email" form:"email"`
 	Password           *string        `json:"password" form:"password"`
 	Secret_2fa         string         `json:"secret_2fa" form:"secret_2fa"`
 	Is_2fa             bool           `gorm:"default:false"`
