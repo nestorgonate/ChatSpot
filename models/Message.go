@@ -10,4 +10,6 @@ type Message struct {
 	Usuarios Usuarios `gorm:"foreignKey:UsuarioID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Salas Salas `gorm:"foreignKey:SalaID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	UsuarioNombre string `gorm:"-" json:"usuarioMessage"`
+	ListaDeUsuarios []string `gorm:"-" json:"listaDeUsuarios"`
+	Tipo string `gorm:"-" json:"tipoBroadcast"`
 }

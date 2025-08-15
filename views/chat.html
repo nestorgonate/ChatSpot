@@ -15,16 +15,16 @@
             background: #f8f9fa;
         }
 
+        #usuarios-box {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: #fff;
+        }
+
         .mensaje {
             margin-bottom: 8px;
-        }
-
-        .mensaje-usuario {
-            font-weight: bold;
-        }
-
-        .mensaje-texto {
-            margin-left: 5px;
         }
     </style>
 </head>
@@ -36,36 +36,50 @@
             <a href="/autenticado/salas" class="btn btn-secondary">Regresar al menú de salas</a>
         </div>
 
-        <!-- Chat box -->
-        <div id="chat-box">
-            {{if gt (len .Mensajes) 0}}
-            {{range .Mensajes}}
-            <div class="mensaje">
-                <span class="mensaje-usuario">{{.Usuarios.Usuario}}:</span>
-                <span class="mensaje-texto">{{.Mensaje}}</span>
-            </div>
-            {{end}}
-            {{else}}
-            <div id="no-mensajes">No hay mensajes aún.</div>
-            {{end}}
-        </div>
+        <div class="row">
+            <!-- Chat -->
+            <div class="col-md-9">
+                <div id="chat-box">
+                    {{if gt (len .Mensajes) 0}}
+                    {{range .Mensajes}}
+                    <div class="mensaje">
+                        <strong>{{.Usuarios.Usuario}}</strong>: {{.Mensaje}}
+                    </div>
+                    {{end}}
+                    {{else}}
+                    <div id="no-mensajes">No hay mensajes aún.</div>
+                    {{end}}
+                </div>
 
-        <!-- Formulario para enviar mensaje -->
-        <form id="chat-form" class="mt-3">
-            <div class="input-group">
-                <input type="text" id="mensaje-input" class="form-control" placeholder="Escribe un mensaje..." required>
-                <button type="submit" class="btn btn-primary">Enviar</button>
+                <!-- Formulario para enviar mensaje -->
+                <form id="chat-form" class="mt-3">
+                    <div class="input-group">
+                        <input type="text" id="mensaje-input" class="form-control" placeholder="Escribe un mensaje..." required>
+                        <button type="submit" class="btn btn-primary">Enviar</button>
+                    </div>
+                </form>
             </div>
-        </form>
+
+            <!-- Usuarios conectados -->
+            <div class="col-md-3">
+                <h5>Usuarios conectados</h5>
+                <div id="usuarios-box">
+                    <div id="no-usuarios">No hay usuarios aún.</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const usuarioID = "{{.UsuarioID}}";
         const salaID = "{{.Sala.ID}}";
         const chatBox = document.getElementById("chat-box");
+        const usuariosBox = document.getElementById("usuarios-box");
+
         chatBox.scrollTop = chatBox.scrollHeight;
+
         // Conexión WebSocket
-        const ws = new WebSocket(`ws://209.74.71.119:9000/autenticado/websockets?salaID=${salaID}`);
+        const ws = new WebSocket(`ws://localhost:9000/autenticado/websockets?salaID=${salaID}`);
 
         ws.onopen = () => {
             console.log("Conectado al WebSocket");
@@ -74,26 +88,39 @@
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data);
 
-            // Ocultar "No hay mensajes aún" si hay mensajes
-            const noMensajes = document.getElementById("no-mensajes");
-            if (noMensajes) noMensajes.style.display = "none";
+            if (msg.tipoBroadcast === "broadcastDeMensaje") {
+                // Ocultar mensaje de "No hay mensajes"
+                const noMensajes = document.getElementById("no-mensajes");
+                if (noMensajes) noMensajes.style.display = "none";
+                agregarMensaje(msg.usuarioMessage, msg.mensaje);
+            }
 
-            agregarMensaje(msg.usuarioMessage, msg.mensaje);
+            if (msg.tipoBroadcast === "listaDeUsuarios") {
+                actualizarListaUsuarios(msg.listaDeUsuarios);
+            }
         };
 
         // Función para agregar mensaje al chat
         function agregarMensaje(usuario, texto) {
             const div = document.createElement("div");
-            const spanUser = document.createElement("span")
-            const spanText = document.createElement("span")
-            spanUser.textContent = usuario;
-            spanUser.style.fontWeight = "bold";
-            spanText.textContent = `: ${texto}`
             div.classList.add("mensaje");
-            div.appendChild(spanUser);
-            div.appendChild(spanText);
+            div.innerHTML = `<strong>${usuario}</strong>: ${texto}`;
             chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight; // Scroll al final
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Función para actualizar la lista de usuarios conectados
+        function actualizarListaUsuarios(usuarios) {
+            usuariosBox.innerHTML = "";
+            if (usuarios.length === 0) {
+                usuariosBox.innerHTML = "<div id='no-usuarios'>No hay usuarios aún.</div>";
+                return;
+            }
+            usuarios.forEach(u => {
+                const div = document.createElement("div");
+                div.textContent = u;
+                usuariosBox.appendChild(div);
+            });
         }
 
         // Enviar mensaje al WebSocket

@@ -26,6 +26,8 @@ func NewChatController(services *services.ChatServices, utils *utils.Utils, chat
 func (r *ChatController) ChatController(c *gin.Context) {
 	salaID := c.Query("salaID")
 	log.Printf("salaID: %v", salaID)
+	usuarioID := r.Utils.GetUsuarioIdFromJWT(c, "usuarioJWT", "usuarioID")
+	usuario, _ := r.GormServices.GetUserByID(usuarioID)
 	allowedOrigin := r.Utils.AllowedOrigins
 	//Valida si se debe cambiar el protocolo http a websocket
 	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {
@@ -45,7 +47,7 @@ func (r *ChatController) ChatController(c *gin.Context) {
 		return
 	}
 	//Obtener usuario
-	go r.ChatRepositories.HandleConnections(conn, salaID)
+	go r.ChatRepositories.HandleConnections(conn, salaID, usuario.Usuario)
 }
 
 // Controla la vista del chat

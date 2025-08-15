@@ -5,7 +5,7 @@ import (
 )
 
 type IChatServies interface{
-	HandleConnections(c *websocket.Conn, salaID string)
+	HandleConnections(conn *websocket.Conn, salaID string, usuarioUsuario string)
 }
 
 type ChatServices struct {
@@ -16,6 +16,6 @@ func NewChatServices(repository IChatServies) *ChatServices{
 	return &ChatServices{repository: repository}
 }
 
-func (r *ChatServices) HandleConnections(c *websocket.Conn, salaID string){
-	r.repository.HandleConnections(c, salaID)
+func (r *ChatServices) HandleConnections(c *websocket.Conn, salaID string, usuarioUsuario string){
+	r.repository.HandleConnections(c, salaID, usuarioUsuario)
 }
