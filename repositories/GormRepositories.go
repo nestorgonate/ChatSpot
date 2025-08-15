@@ -31,12 +31,20 @@ type IGormRepositories interface {
 }
 
 type GormRepositories struct {
-	db *gorm.DB
+	db          *gorm.DB
 	redisClient *redis.Client
 }
 
 func NewGormRepositories(db *gorm.DB) *GormRepositories {
-	return &GormRepositories{db: db}
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	return &GormRepositories{
+		db: db,
+		redisClient: redisClient,
+	}
 }
 
 func (r *GormRepositories) GetAll() ([]models.Usuarios, error) {
@@ -132,56 +140,56 @@ func (r *GormRepositories) IsPreviousPassword(id uint, newPassword string) bool 
 	return false
 }
 
-func (r *GormRepositories) AddSalaToDatabase(sala *models.Salas) error{
+func (r *GormRepositories) AddSalaToDatabase(sala *models.Salas) error {
 	err := r.db.Model(models.Salas{}).Create(sala)
 	return err.Error
 }
 
-func (r *GormRepositories) GetAllSalas() ([]models.Salas, error){
+func (r *GormRepositories) GetAllSalas() ([]models.Salas, error) {
 	var salas []models.Salas
 	err := r.db.Find(&salas)
 	return salas, err.Error
 }
 
-func (r *GormRepositories) GetSalaByID(id uint) (*models.Salas, error){
+func (r *GormRepositories) GetSalaByID(id uint) (*models.Salas, error) {
 	var sala models.Salas
 
 	err := r.db.Model(models.Salas{}).Where("id = ?", id).First(&sala)
 	return &sala, err.Error
 }
 
-func (r *GormRepositories) GetLastMessages(salaID uint) []models.Message{
+func (r *GormRepositories) GetLastMessages(salaID uint) []models.Message {
 	var mensajes []models.Message
 	redisClient := r.redisClient
 	key := "latest_messages"
 	cache, err := redisClient.Get(context.Background(), key).Result()
 	//Redis nil no tiene los ultimos mensajes
-	if err == redis.Nil{
+	if err == redis.Nil {
 		log.Print("Consultado en la base de datos para usar en redis")
 		r.db.Preload("Usuarios").Model(models.Message{}).Where("sala_id = ?", salaID).Order("created_at desc").Limit(50).Find(&mensajes)
 		//Parsear el contenido de la variable mensajes a un JSON para enviarlo a redis
 		mensajesJSON, _ := json.Marshal(&mensajes)
 		redisClient.Set(context.Background(), key, mensajesJSON, 5*time.Minute)
-	} else if err != nil{
+	} else if err != nil {
 		//No funciona redis, consultar a db
 		log.Print("No funciona redis, consultando a db")
 		r.db.Preload("Usuarios").Model(models.Message{}).Where("sala_id = ?", salaID).Order("created_at desc").Limit(50).Find(&mensajes)
-	} else{
+	} else {
 		log.Print("Usando cache de redis")
 		json.Unmarshal([]byte(cache), &mensajes)
 	}
 	//Inventir slice para mostrar el mensaje nuevo al final del scroll del chat
 	for i, j := 0, len(mensajes)-1; i < j; i, j = i+1, j-1 {
-        mensajes[i], mensajes[j] = mensajes[j], mensajes[i]
-    }
+		mensajes[i], mensajes[j] = mensajes[j], mensajes[i]
+	}
 	return mensajes
 }
 
-func (r *GormRepositories) AddMessageToDatabase(mensaje *models.Message){
+func (r *GormRepositories) AddMessageToDatabase(mensaje *models.Message) {
 	r.db.Create(&mensaje)
 }
 
-func (r *GormRepositories) DeleteSalaByID(salaID uint, usuarioID uint) bool{
+func (r *GormRepositories) DeleteSalaByID(salaID uint, usuarioID uint) bool {
 	resultado := r.db.Model(models.Salas{}).Where("id = ? and usuario_id = ?", salaID, usuarioID).Unscoped().Delete(models.Salas{})
 	var canDelete bool = true
 	//No se borro porque la sala no existe o el usuario no es el propietario
