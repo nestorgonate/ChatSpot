@@ -2,9 +2,13 @@ package repositories
 
 import (
 	"ChatSpot/models"
+	"ChatSpot/utils"
 	"encoding/json"
 	"errors"
 	"log"
+	"time"
+
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -21,13 +25,14 @@ type IGormRepositories interface {
 	AddSalaToDatabase(sala *models.Salas) error
 	GetAllSalas() ([]models.Salas, error)
 	GetSalaByID(salaID uint) (*models.Salas, error)
-	GetLastMessages(salaID uint) ([]models.Message, error)
+	GetLastMessages(salaID uint) []models.Message
 	AddMessageToDatabase(mensaje *models.Message)
 	DeleteSalaByID(salaID uint, usuarioID uint) bool
 }
 
 type GormRepositories struct {
 	db *gorm.DB
+	Utils *utils.Utils
 }
 
 func NewGormRepositories(db *gorm.DB) *GormRepositories {
@@ -145,14 +150,31 @@ func (r *GormRepositories) GetSalaByID(id uint) (*models.Salas, error){
 	return &sala, err.Error
 }
 
-func (r *GormRepositories) GetLastMessages(salaID uint) ([]models.Message, error){
+func (r *GormRepositories) GetLastMessages(salaID uint) []models.Message{
 	var mensajes []models.Message
-	err := r.db.Preload("Usuarios").Model(models.Message{}).Where("sala_id = ?", salaID).Order("created_at desc").Limit(50).Find(&mensajes)
+	redisClient := r.Utils.RedisClient()
+	key := "latest_messages"
+	cache, err := redisClient.Get(r.Utils.Ctx, key).Result()
+	//Redis nil no tiene los ultimos mensajes
+	if err == redis.Nil{
+		log.Print("Consultado en la base de datos para usar en redis")
+		r.db.Preload("Usuarios").Model(models.Message{}).Where("sala_id = ?", salaID).Order("created_at desc").Limit(50).Find(&mensajes)
+		//Parsear el contenido de la variable mensajes a un JSON para enviarlo a redis
+		mensajesJSON, _ := json.Marshal(&mensajes)
+		redisClient.Set(r.Utils.Ctx, key, mensajesJSON, 5*time.Minute)
+	} else if err != nil{
+		//No funciona redis, consultar a db
+		log.Print("No funciona redis, consultando a db")
+		r.db.Preload("Usuarios").Model(models.Message{}).Where("sala_id = ?", salaID).Order("created_at desc").Limit(50).Find(&mensajes)
+	} else{
+		log.Print("Usando cache de redis")
+		json.Unmarshal([]byte(cache), &mensajes)
+	}
 	//Inventir slice para mostrar el mensaje nuevo al final del scroll del chat
 	for i, j := 0, len(mensajes)-1; i < j; i, j = i+1, j-1 {
         mensajes[i], mensajes[j] = mensajes[j], mensajes[i]
     }
-	return mensajes, err.Error
+	return mensajes
 }
 
 func (r *GormRepositories) AddMessageToDatabase(mensaje *models.Message){

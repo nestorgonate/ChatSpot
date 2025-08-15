@@ -2,6 +2,7 @@ package utils
 
 import (
 	"ChatSpot/models"
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
 	"github.com/rabbitmq/amqp091-go"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -21,6 +23,8 @@ type Utils struct {
 	Usuario        models.Usuarios
 	Conn           *amqp091.Connection
 	Channel        *amqp091.Channel
+	Ctx            context.Context
+	redisClient    *redis.Client
 }
 
 func NewUtils() *Utils {
@@ -128,4 +132,15 @@ func (r *Utils) UintToString(number uint) string {
 func (r *Utils) StringToUint(number string) uint {
 	uintUint, _ := strconv.ParseUint(number, 10, 64)
 	return uint(uintUint)
+}
+
+func (r *Utils) RedisClient() *redis.Client{
+	if r.redisClient == nil{
+		r.redisClient = redis.NewClient(&redis.Options{
+			Addr:     "localhost:6379",
+			Password: "",
+			DB:       0,
+		})
+	}
+	return r.redisClient
 }

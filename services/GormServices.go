@@ -13,7 +13,7 @@ type IGormRepository interface {
 	AddSalaToDatabase(sala *models.Salas) error
 	GetAllSalas() ([]models.Salas, error)
 	GetSalaByID(salaID uint) (*models.Salas, error)
-	GetLastMessages(salaID uint) ([]models.Message, error)
+	GetLastMessages(salaID uint) []models.Message
 	AddMessageToDatabase(mensaje *models.Message)
 	DeleteSalaByID(salaID uint, usuarioID uint) bool
 }
@@ -66,7 +66,7 @@ func (r *GormServices) GetSalaByID(salaID uint) (*models.Salas, error) {
 	return r.repository.GetSalaByID(salaID)
 }
 
-func (r *GormServices) GetLastMessages(salaID uint) ([]models.Message, error) {
+func (r *GormServices) GetLastMessages(salaID uint) []models.Message {
 	return r.repository.GetLastMessages(salaID)
 }
 
