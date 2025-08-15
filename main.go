@@ -62,5 +62,5 @@ func main() {
 		autenticado.POST("/salas", salasController.NuevaSala)
 		autenticado.POST("/salas/borrar", salasController.BorrarSala)
 	}
-	r.Run()
+	r.Run(":9000")
 }

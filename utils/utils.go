@@ -25,7 +25,7 @@ type Utils struct {
 
 func NewUtils() *Utils {
 	return &Utils{
-		AllowedOrigins: []string{"http://localhost:8080"},
+		AllowedOrigins: []string{"http://localhost:9000", "http://209.74.71.119:9000"},
 	}
 }
 
