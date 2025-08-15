@@ -46,7 +46,7 @@ func (r *ChatRepositories) HandleConnections(conn *websocket.Conn, salaID string
 		go r.ConsummerRabbitMQ(salaID)
 	}
 	for{
-		var mensaje models.Message
+		mensaje := models.Message{}
 		err := conn.ReadJSON(&mensaje)
 		if err != nil{
 			if websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure){
@@ -79,8 +79,6 @@ func (r *ChatRepositories) HandleConnections(conn *websocket.Conn, salaID string
 //Declara exchange, queue, binding, consume y reenvia mensajes
 func (r *ChatRepositories) ConsummerRabbitMQ(salaID string) {
 	fmt.Println("ConsummerRabbitMQ")
-	var mensajes models.Message
-	var usuario models.Usuarios
 	//Declarar el exchange
 	err := r.Utils.Channel.ExchangeDeclare(
 		"chat_exchange",
@@ -134,6 +132,8 @@ func (r *ChatRepositories) ConsummerRabbitMQ(salaID string) {
 	//Reenviar mensaje por websockets
 	go func(){
 		for d := range getMensajes{
+			var mensajes models.Message
+			var usuario models.Usuarios
 			err := json.Unmarshal(d.Body, &mensajes)
 			if err != nil{
 				log.Printf("No se pudo parsear el JSON al struct mensajes: %v", err)
