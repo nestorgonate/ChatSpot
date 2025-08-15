@@ -26,11 +26,17 @@ type ChatRepositories struct {
 }
 
 func NewChatRepositories(utils *utils.Utils, db *GormRepositories) *ChatRepositories{
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+			Password: "",
+			DB:       0,
+	})
 	return &ChatRepositories{
 		Clients: make(map[*websocket.Conn]string),
 		SalaConsumers: make(map[string]bool),
 		Utils: utils,
 		db: db,
+		redisClient: redisClient,
 	}
 }
 
