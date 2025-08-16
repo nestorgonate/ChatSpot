@@ -34,11 +34,11 @@ func NewChatRepositories(utils *utils.Utils, db *GormRepositories) *ChatReposito
 		DB:       0,
 	})
 	return &ChatRepositories{
-		ConexionesASalas: make(map[*websocket.Conn]string),
-		SalaConsumers:    make(map[string]bool),
-		Utils:            utils,
-		db:               db,
-		redisClient:      redisClient,
+		ConexionesASalas:     make(map[*websocket.Conn]string),
+		SalaConsumers:        make(map[string]bool),
+		Utils:                utils,
+		db:                   db,
+		redisClient:          redisClient,
 		ConexionesDeUsuarios: make(map[*websocket.Conn]string),
 	}
 }
@@ -165,10 +165,17 @@ func (r *ChatRepositories) ConsummerRabbitMQ(salaID string) {
 			}
 			r.db.db.Model(models.Usuarios{}).Where("id = ?", mensajes.UsuarioID).Find(&usuario)
 			mensajes.UsuarioNombre = usuario.Usuario
-			r.db.db.Create(&mensajes)
-			r.redisClient.Del(context.Background(), key)
-			log.Print("Cache de redis borrada al enviar un mensaje")
-			r.broadcast(mensajes, salaID)
+			log.Printf("Tipo de mensaje recibido: %v", mensajes.Tipo)
+			//Si es broadcast de mensaje es el mensaje de un usuario, si es lista de usuarios es la lista de usuarios conectados
+			switch mensajes.Tipo {
+			case "broadcastDeMensaje":
+				r.db.db.Create(&mensajes)
+				r.redisClient.Del(context.Background(), key)
+				log.Print("Cache de redis borrada al enviar un mensaje")
+				r.broadcast(mensajes, salaID)
+			case "listaDeUsuarios":
+				r.broadcast(mensajes, salaID)
+			}
 		}
 	}()
 }
@@ -189,7 +196,7 @@ func (r *ChatRepositories) messageToJSON(mensaje models.Message) []byte {
 	return data
 }
 
-// Itera en el mapa de Conexiones a salas, si salaID coincide con sala, se agrega al slices Usuarios el valor que tenga las keys similares en Conexiones a salas y usuarios
+// Itera en el mapa de Conexiones a salas, si sala coincide con salaID, se agrega al slices Usuarios el valor que tenga la misma conexion en salas y usuarios
 func (r *ChatRepositories) usuariosEnSala(salaID string) []string {
 	var usuarios []string
 	for conn, sala := range r.ConexionesASalas {
